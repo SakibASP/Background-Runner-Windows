@@ -1,0 +1,20 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+publish/
+*.user
+
+# Large build artifacts (ship these via GitHub Releases instead)
+*.exe
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE / editor
+.vs/
+.idea/
+.vscode/
+
+# Tooling / local
+.claude/
