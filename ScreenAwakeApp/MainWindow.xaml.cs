@@ -4,6 +4,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Forms = System.Windows.Forms;
+using Brush = System.Windows.Media.Brush;
+using Color = System.Windows.Media.Color;
+using ColorConverter = System.Windows.Media.ColorConverter;
 
 namespace ScreenAwake;
 
@@ -17,6 +21,10 @@ public partial class MainWindow : Window
     private uint _lastUserTick;
     private int _idleThreshold = 5;
 
+    private Forms.NotifyIcon _tray = null!;
+    private Forms.ToolStripMenuItem _toggleItem = null!;
+    private bool _balloonShown;
+
     private static readonly Brush AccentBrush = (Brush)Application.Current.Resources["Accent"];
     private static readonly Brush DangerBrush = (Brush)Application.Current.Resources["Danger"];
     private static readonly Brush MutedBrush = (Brush)Application.Current.Resources["TextMuted"];
@@ -27,6 +35,63 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _timer.Tick += Timer_Tick;
+        InitTray();
+    }
+
+    // ---- System tray ------------------------------------------------------
+    private void InitTray()
+    {
+        _tray = new Forms.NotifyIcon
+        {
+            Text = "Screen Awake",
+            Visible = true,
+            Icon = LoadAppIcon(),
+        };
+        _tray.MouseClick += (s, e) => { if (e.Button == Forms.MouseButtons.Left) ShowFromTray(); };
+
+        _toggleItem = new Forms.ToolStripMenuItem("Start", null, (s, e) => ActionBtn_Click(this, new RoutedEventArgs()));
+        var menu = new Forms.ContextMenuStrip();
+        menu.Items.Add(new Forms.ToolStripMenuItem("Open", null, (s, e) => ShowFromTray()));
+        menu.Items.Add(_toggleItem);
+        menu.Items.Add(new Forms.ToolStripSeparator());
+        menu.Items.Add(new Forms.ToolStripMenuItem("Exit", null, (s, e) => Close()));
+        _tray.ContextMenuStrip = menu;
+    }
+
+    private static System.Drawing.Icon LoadAppIcon()
+    {
+        try
+        {
+            var path = Environment.ProcessPath;
+            if (path != null)
+            {
+                var ico = System.Drawing.Icon.ExtractAssociatedIcon(path);
+                if (ico != null) return ico;
+            }
+        }
+        catch { /* fall through to default */ }
+        return System.Drawing.SystemIcons.Application;
+    }
+
+    private void HideToTray()
+    {
+        Hide();   // also removes the taskbar button
+        if (!_balloonShown)
+        {
+            _tray.ShowBalloonTip(2500, "Screen Awake",
+                _running ? "Still running — keeping you Available." : "Still running in the background.",
+                Forms.ToolTipIcon.Info);
+            _balloonShown = true;
+        }
+    }
+
+    private void ShowFromTray()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+        Topmost = true;
+        Topmost = false;   // nudge to the foreground, then release
     }
 
     // ---- Window chrome ----------------------------------------------------
@@ -35,7 +100,7 @@ public partial class MainWindow : Window
         if (e.ButtonState == MouseButtonState.Pressed) DragMove();
     }
 
-    private void MinBtn_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+    private void MinBtn_Click(object sender, RoutedEventArgs e) => HideToTray();
     private void CloseBtn_Click(object sender, RoutedEventArgs e) => Close();
 
     // ---- Numeric input helpers -------------------------------------------
@@ -87,6 +152,7 @@ public partial class MainWindow : Window
 
         ActionBtn.Content = "Stop";
         ActionBtn.Background = DangerBrush;
+        _toggleItem.Text = "Stop";
         SetInputsEnabled(false);
 
         Timer_Tick(this, EventArgs.Empty);   // paint immediately
@@ -101,11 +167,13 @@ public partial class MainWindow : Window
 
         ActionBtn.Content = "Start";
         ActionBtn.Background = AccentBrush;
+        _toggleItem.Text = "Start";
         SetInputsEnabled(true);
 
         Countdown.Text = "00:00";
         SetChip(chip, MutedBrush);
         SubStatus.Text = sub;
+        _tray.Text = "Screen Awake";
     }
 
     private void SetInputsEnabled(bool on)
@@ -143,17 +211,20 @@ public partial class MainWindow : Window
             return;
         }
 
-        Countdown.Text = $"{(int)remaining.TotalMinutes:00}:{remaining.Seconds:00}";
+        string clock = $"{(int)remaining.TotalMinutes:00}:{remaining.Seconds:00}";
+        Countdown.Text = clock;
 
         if (_moving)
         {
             SetChip("Active", SuccessBrush);
             SubStatus.Text = "Keeping you Available";
+            _tray.Text = $"Screen Awake — {clock} left";
         }
         else
         {
             SetChip("You're active", BlueBrush);
             SubStatus.Text = "Paused while you work";
+            _tray.Text = $"Screen Awake — paused • {clock} left";
         }
     }
 
@@ -167,6 +238,11 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         Native.KeepAwake(false);
+        if (_tray != null)
+        {
+            _tray.Visible = false;
+            _tray.Dispose();
+        }
         base.OnClosed(e);
     }
 
