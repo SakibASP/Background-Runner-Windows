@@ -2,7 +2,6 @@
 [Bb]in/
 [Oo]bj/
 publish/
-*.user
 
 # Large build artifacts (ship these via GitHub Releases instead)
 *.exe
@@ -15,6 +14,13 @@ __pycache__/
 .vs/
 .idea/
 .vscode/
+
+# Visual Studio user/solution state
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.slnx.user
 
 # Tooling / local
 .claude/
