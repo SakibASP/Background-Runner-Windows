@@ -10,12 +10,9 @@ The moment you actually touch the mouse or keyboard, it detects the real input a
 
 > Note: A plain `SetCursorPos` cursor nudge is **not** enough — Windows doesn't count it as input, so Teams still goes Away. The app uses `SendInput` (a real 1px move-and-return event) specifically to reset the idle timer.
 
-## Two versions in this repo
+## App
 
-| Version | Location | Notes |
-|--------|----------|-------|
-| **C# / WPF** (recommended) | [`ScreenAwakeApp/`](ScreenAwakeApp/) | Modern dark UI, self-contained, ships as a real installer |
-| **Python** (original) | [`ScreenAwake.pyw`](ScreenAwake.pyw) | No dependencies beyond the standard library; run via `Screen Awake.bat` |
+A **C# / WPF** app with a modern dark UI. It's self-contained (bundles the .NET runtime) and ships as a real per-user installer. Source is in [`ScreenAwakeApp/`](ScreenAwakeApp/).
 
 ## Build
 
