@@ -2,6 +2,10 @@
 
 A tiny Windows app that keeps your screen on and your **Teams / Slack status "Available"** while you're away from the keyboard — without fighting you for the mouse.
 
+### ⬇️ [Download the installer](https://github.com/SakibASP/Background-Runner-Windows/releases/latest)
+
+Grab `Screen-Awake-Installer.exe` from the latest release and run it — per-user install, no admin required.
+
 ## How it works
 
 When you've been idle past a threshold you set, the app fires a **tiny, genuine input pulse** once per second. That pulse resets the Windows idle timer — the *same* timer Microsoft Teams uses to decide you're "Away" — and keeps the display awake.
